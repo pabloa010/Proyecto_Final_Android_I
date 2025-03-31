@@ -1,5 +1,45 @@
 ﻿@page "/"
+@using Radzen
+@using Radzen.Blazor
+@using ControlGP.Models
+@inject Controllers.ControlGastoController ControlGastoService
 
-<h1>Hello, world!</h1>
+<PageTitle>Dashboard</PageTitle>
 
-Welcome to your new app.
+<h3>Dashboard de Control de Gastos</h3>
+
+@* <RadzenChart>
+    <RadzenColumnSeries Data="@controlGastos" CategoryProperty="Tipo" ValueProperty="Monto" />
+</RadzenChart> *@
+
+<!-- Mostrar la total gastos -->
+<RadzenLabel Text="Disponible:" Style="font-weight: bold;" />
+<RadzenNumeric Value="@totalGasto" ReadOnly="true" Style="font-size: 1.2em; margin-top: 10px;" />
+<br />
+
+<!-- Mostrar la suma de ingresos -->
+<RadzenLabel Text="Suma de Ingresos:" Style="font-weight: bold;" />
+<RadzenNumeric Value="@sumaIngresos" ReadOnly="true" Style="font-size: 1.2em; margin-top: 10px;" />
+
+<!-- Mostrar la suma de Egresos -->
+<RadzenLabel Text="Suma de Egresos:" Style="font-weight: bold;" />
+<RadzenNumeric Value="@sumaEgresos" ReadOnly="true" Style="font-size: 1.2em; margin-top: 10px;" />
+
+
+@code {
+    private List<ControlGasto> controlGastos = new();
+    private decimal sumaIngresos;
+    private decimal sumaEgresos;
+    private decimal totalGasto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ✅ Asigna a la variable global
+        controlGastos = await ControlGastoService.Get();
+
+        // ✅ Obtiene la suma de los ingresos
+        sumaIngresos = await ControlGastoService.GetSumaGastosIngreso();
+        sumaEgresos = await ControlGastoService.GetSumaGastosEgreso();
+        totalGasto = await ControlGastoService.GetTotalGastos();
+    }
+}

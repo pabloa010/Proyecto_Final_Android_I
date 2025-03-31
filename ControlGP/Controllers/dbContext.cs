@@ -12,6 +12,8 @@ namespace ControlGP.Controllers
     {
         public virtual DbSet<Ingreso> Ingreso { get; set; }
         public virtual DbSet<Egreso> Egreso { get; set; }
+        public DbSet<ControlGasto> ControlGastos { get; set; }
+
 
         public dbContext(DbContextOptions<dbContext> options) : base(options)
         {
