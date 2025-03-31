@@ -41,6 +41,7 @@ namespace ControlGP
 
             // Registrar servicios
             builder.Services.AddScoped<IngresoController>();
+            builder.Services.AddScoped<EgresoController>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
