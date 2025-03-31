@@ -1,7 +1,180 @@
 ﻿@page "/Ingresos"
+@using Radzen
+@using Radzen.Blazor
+@using Models
+@inject Controllers.IngresoController Controller
+@inject DialogService DialogService
 
-<h3>Ingresos</h3>
+<h3>Administración de Ingresos</h3>
+
+<RadzenDataGrid @ref="Tabla"
+                AllowFiltering="true"
+                AllowPaging="true"
+                AllowSorting="true"
+                AllowColumnResize="true"
+                ColumnWidth="150px"
+                Density="Density.Default"
+                PageSize="5"
+                Responsive="true"
+                EditMode="DataGridEditMode.Single"
+                Data="Data"
+                TItem="Ingreso"
+                EmptyText="Sin registros para mostrar"
+                ShowPagingSummary="true"
+                PageSizeOptions=@PageSizeOptions
+                PagingSummaryFormat=@PagingSummaryFormat
+                PageSizeText="Registros por página"
+                ClearFilterText="Borrar"
+                ApplyFilterText="Aplicar"
+                FilterText="Filtro"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                FilterMode="FilterMode.Simple"
+                Page="@(a=>DisableInsert=false)"
+                PageSizeChanged="@(a=>DisableInsert=false)">
+
+    <HeaderTemplate>
+        <RadzenButton Disabled="@(!Agregar)" ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Agregar" Click="@InsertRow" />
+    </HeaderTemplate>
+    <Columns>
+        <RadzenDataGridColumn Property="@nameof(Ingreso.Concepto)" Title="Concepto">
+            <EditTemplate Context="Ingreso">
+                <RadzenTextBox @bind-Value=Ingreso.Concepto></RadzenTextBox>
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Ingreso.Monto)" Title="Monto">
+            <EditTemplate Context="Ingreso">
+                <RadzenNumeric @bind-Value=Ingreso.Monto></RadzenNumeric>
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Ingreso.Fecha)" Title="Fecha">
+            <EditTemplate Context="Ingreso">
+                <RadzenDatePicker @bind-Value=Ingreso.Fecha></RadzenDatePicker>
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn Context="Ingreso" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Acciones" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+            <Template Context="Ingreso">
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(a=>EditRow(Ingreso))" />
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="rz-my-1 rz-ms-1" Click="@(x=>DeleteRow(Ingreso))" />
+            </Template>
+            <EditTemplate Context="Ingreso">
+                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" aria-label="Save" Click="@(x=>SaveRow(Ingreso))" />
+                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="rz-my-1 rz-ms-1" aria-label="Cancel" Click="@(x=>CancelEdit(Ingreso))" />
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" Click="@(x=>DeleteRow(Ingreso))" class="rz-my-1 rz-ms-1" aria-label="Delete" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+    </Columns>
+
+</RadzenDataGrid>
+
+<RadzenDialog />
 
 @code {
+    public RadzenDataGrid<Ingreso>? Tabla { get; set; }
+    public List<Ingreso> ?Data { get; set; }
+    public IEnumerable<int> PageSizeOptions { get; set; } = new[] { 2, 5, 10, 100 };
+    public string PagingSummaryFormat { get; set; } = "Página {0} de {1} (Total {2} Registros)";
+    public bool DisableInsert { get; set; } = false;
+    public bool Agregar { get; set; } = true;
+
+    
+
+    protected override Task OnInitializedAsync()
+    {
+        cargarGrid();
+        return base.OnInitializedAsync();
+    }
+
+    private async void cargarGrid()
+    {
+        Data = await Controller.Get();
+        StateHasChanged();
+    }
+
+    //Inserta una nueva fila vacia
+    async Task InsertRow()
+    {
+        if (Tabla != null)
+            await Tabla.InsertRow(new());
+        DisableInsert = false;
+    }
+
+    //Edita una fila existente
+    async Task EditRow(Ingreso Entidad)
+    {
+        if (Tabla != null)
+            await Tabla.EditRow(Entidad);
+        DisableInsert = true;
+    }
+    async Task DeleteRow(Ingreso Entidad)
+    {
+        if (Tabla != null)
+            if (await Controller.Delete(Entidad))
+            {
+                await ShowNotify("Registro Anulado con exito.");
+                cargarGrid();
+                return;
+            }
+        await ShowNotify("El registro no se anuló");
+        cargarGrid();
+        DisableInsert = true;
+    }
+
+    async Task SaveRow(Ingreso Entidad)
+    {
+        if (Entidad.IdIngreso > 0)
+        {
+            //Actualizar
+            if (await Controller.Update(Entidad))
+            {
+                await ShowNotify("Registro Actualizado con exito.");
+                cargarGrid();
+                return;
+            }
+            await ShowNotify("El registro no se actulizó");
+        }
+        else
+        {
+            //Insertar
+            if (await Controller.Insert(Entidad) > 0)
+            {
+                await ShowNotify("Registro agregado con exito.");
+                cargarGrid();
+                return;
+            }
+            await ShowNotify("El registro no se agregó");
+        }
+        cargarGrid();
+        CancelEdit(Entidad);
+
+        await Tabla.Reload();
+        await Task.Delay(1);
+
+    }
+
+    async void CancelEdit(Ingreso Entidad)
+    {
+        if (Tabla != null)
+            Tabla.CancelEditRow(Entidad);
+        DisableInsert = false;
+    }
+
+    private async Task ShowNotify(string Notificacion)
+    {
+        var result = await DialogService.OpenAsync("Notificación", ds =>
+    @<RadzenStack Gap="1rem">
+        <RadzenLabel>@Notificacion</RadzenLabel>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+            <RadzenButton Text="OK" Click="@(()=>ds.Close())" ButtonStyle="ButtonStyle.Light" />
+        </RadzenStack>
+    </RadzenStack>
+    ,
+        new DialogOptions
+        {
+            Width = "350px",
+            Height = "250px",
+            CloseDialogOnOverlayClick = false
+        });
+    }
 
 }

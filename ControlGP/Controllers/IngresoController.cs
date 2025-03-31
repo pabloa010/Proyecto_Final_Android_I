@@ -26,13 +26,14 @@ namespace ControlGP.Controllers
         public async Task<List<Ingreso>> Get()
         {
             using var context = db.CreateDbContext();
-            return await context.Ingreso.ToListAsync();
+            return await context.Ingreso.Where(a=>a.Activo).ToListAsync();
         }
 
         public async Task<int> Insert(Ingreso Entidad)
         {
             using var context = db.CreateDbContext();
             context.Ingreso.Add(Entidad);
+            Entidad.Activo = true;
             await context.SaveChangesAsync();
             return Entidad.IdIngreso;
         }
@@ -47,10 +48,14 @@ namespace ControlGP.Controllers
 
         public async Task<bool> Delete(Ingreso Entidad)
         {
-            using var context = db.CreateDbContext();
-            context.Ingreso.Remove(Entidad);
-            await context.SaveChangesAsync();
-            return true;
+            using var Conexion = db.CreateDbContext();
+            var Registro = await Conexion.Ingreso.Where(a => a.IdIngreso == Entidad.IdIngreso).SingleOrDefaultAsync();
+            if (Registro != null)
+            {
+                Registro.Activo = false;
+                return await Conexion.SaveChangesAsync() > 0;
+            }
+            return false;
         }
     }
 }
