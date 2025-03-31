@@ -15,8 +15,11 @@ namespace ControlGP.Models
             public int IdEgreso { get; set; }
             [Required]
             public string Concepto { get; set; } = string.Empty;
+            [Required]
             public decimal Monto { get; set; }
+            [Required]
             public DateTime Fecha { get; set; }
+            [Required]
             public bool Activo { get; set; }
         }
 }

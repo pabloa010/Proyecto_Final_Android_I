@@ -1,5 +1,6 @@
-﻿//using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ControlGP.Controllers;
 using Radzen;
 //using Windows.UI;
 
@@ -16,6 +17,10 @@ namespace ControlGP
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
+
+            // Configuración de Entity Framework con DbContextFactory
+            builder.Services.AddDbContextFactory<dbContext>(options =>
+                options.UseSqlServer("Server=localhost;Database=dbcontrolgp;User Id=root;Password='';TrustServerCertificate=True;"));
 
             //// Configuración de Entity Framework con DbContextFactory
             //builder.Services.AddDbContextFactory<dbContext>(options =>
