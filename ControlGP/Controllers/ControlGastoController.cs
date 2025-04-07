@@ -8,9 +8,9 @@ namespace ControlGP.Controllers
 {
     public interface IControlGastosController
     {
-        Task<List<ControlGasto>> Get();
-        Task<decimal> GetSumaGastosIngreso();
-        Task<decimal> GetSumaGastosEgreso();
+        Task<List<ControlGasto>> Get(DateTime fechaInicio, DateTime fechaFin);
+        Task<decimal> GetSumaGastosIngreso(DateTime fechaInicio, DateTime fechaFin);
+        Task<decimal> GetSumaGastosEgreso(DateTime fechaInicio, DateTime fechaFin);
         Task<decimal> GetTotalGastos();
     }
     public class ControlGastoController:IControlGastosController
@@ -22,26 +22,28 @@ namespace ControlGP.Controllers
             db = dbContextFactory;
         }
 
-        public async Task<List<ControlGasto>> Get()
-        {
-            using var context = db.CreateDbContext();
-            return await context.ControlGastos.ToListAsync();
-        }
-
-        public async Task<decimal> GetSumaGastosIngreso()
+        public async Task<List<ControlGasto>> Get(DateTime fechaInicio, DateTime fechaFin)
         {
             using var context = db.CreateDbContext();
             return await context.ControlGastos
-                                .Where(a => a.Tipo == "Ingreso")
-                                .SumAsync(a => a.Monto);
+                .Where(c => c.Fecha >= fechaInicio && c.Fecha <= fechaFin)
+                .ToListAsync();
         }
 
-        public async Task<decimal> GetSumaGastosEgreso()
+        public async Task<decimal> GetSumaGastosIngreso(DateTime fechaInicio, DateTime fechaFin)
         {
             using var context = db.CreateDbContext();
             return await context.ControlGastos
-                                .Where(a => a.Tipo == "Egreso")
-                                .SumAsync(a => a.Monto);
+                .Where(a => a.Tipo == "Ingreso" && a.Fecha >= fechaInicio && a.Fecha <= fechaFin)
+                .SumAsync(a => a.Monto);
+        }
+
+        public async Task<decimal> GetSumaGastosEgreso(DateTime fechaInicio, DateTime fechaFin)
+        {
+            using var context = db.CreateDbContext();
+            return await context.ControlGastos
+                .Where(a => a.Tipo == "Egreso" && a.Fecha >= fechaInicio && a.Fecha <= fechaFin)
+                .SumAsync(a => a.Monto);
         }
 
         public async Task<decimal> GetTotalGastos()

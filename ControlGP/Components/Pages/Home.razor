@@ -6,24 +6,55 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<h3>Dashboard de Control de Gastos</h3>
+<h2 class="mb-4">📊 Dashboard de Control de Gastos</h2>
 
-@* <RadzenChart>
-    <RadzenColumnSeries Data="@controlGastos" CategoryProperty="Tipo" ValueProperty="Monto" />
-</RadzenChart> *@
+<RadzenTemplateForm TItem="object">
+    <RadzenFieldset Text="Filtrar por fecha" Style="margin-bottom: 20px;">
+        <RadzenRow>
+            <RadzenColumn xs="12" sm="4">
+                <RadzenDatePicker @bind-Value="fechaInicio" DateFormat="dd/MM/yyyy" Placeholder="Fecha Inicio" />
+            </RadzenColumn>
+            <RadzenColumn xs="12" sm="4">
+                <RadzenDatePicker @bind-Value="fechaFin" DateFormat="dd/MM/yyyy" Placeholder="Fecha Fin" />
+            </RadzenColumn>
+            <RadzenColumn xs="12" sm="4" Style="display: flex; align-items: center;">
+                <RadzenButton Text="Aplicar Filtro"
+                              Icon="search"
+                              Style="margin-top: 5px;"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Click="@FiltrarGastos" />
 
-<!-- Mostrar la total gastos -->
-<RadzenLabel Text="Disponible:" Style="font-weight: bold;" />
-<RadzenNumeric Value="@totalGasto" ReadOnly="true" Style="font-size: 1.2em; margin-top: 10px;" />
-<br />
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenFieldset>
+</RadzenTemplateForm>
 
-<!-- Mostrar la suma de ingresos -->
-<RadzenLabel Text="Suma de Ingresos:" Style="font-weight: bold;" />
-<RadzenNumeric Value="@sumaIngresos" ReadOnly="true" Style="font-size: 1.2em; margin-top: 10px;" />
 
-<!-- Mostrar la suma de Egresos -->
-<RadzenLabel Text="Suma de Egresos:" Style="font-weight: bold;" />
-<RadzenNumeric Value="@sumaEgresos" ReadOnly="true" Style="font-size: 1.2em; margin-top: 10px;" />
+<RadzenRow>
+    <!-- Tarjeta de Disponible -->
+    <RadzenColumn xs="12" sm="4">
+        <RadzenCard Style="background-color: #007bff; color: white; padding: 20px; border-radius: 12px;">
+            <h4><RadzenIcon Icon="account_balance_wallet" Style="margin-right: 10px;" />Disponible</h4>
+            <h3>C$ @totalGasto.ToString("N2")</h3>
+        </RadzenCard>
+    </RadzenColumn>
+
+    <!-- Tarjeta de Ingresos -->
+    <RadzenColumn xs="12" sm="4">
+        <RadzenCard Style="background-color: #28a745; color: white; padding: 20px; border-radius: 12px;">
+            <h4><RadzenIcon Icon="trending_up" Style="margin-right: 10px;" />Ingresos</h4>
+            <h3>C$ @sumaIngresos.ToString("N2")</h3>
+        </RadzenCard>
+    </RadzenColumn>
+
+    <!-- Tarjeta de Egresos -->
+    <RadzenColumn xs="12" sm="4">
+        <RadzenCard Style="background-color: #dc3545; color: white; padding: 20px; border-radius: 12px;">
+            <h4><RadzenIcon Icon="trending_down" Style="margin-right: 10px;" />Egresos</h4>
+            <h3>C$ @sumaEgresos.ToString("N2")</h3>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
 
 
 @code {
@@ -32,14 +63,26 @@
     private decimal sumaEgresos;
     private decimal totalGasto;
 
+    private DateTime fechaInicio = DateTime.Today.AddMonths(-1); // predeterminado: último mes
+    private DateTime fechaFin = DateTime.Today;
+
     protected override async Task OnInitializedAsync()
     {
-        // ✅ Asigna a la variable global
-        controlGastos = await ControlGastoService.Get();
+        await CargarDatos();
+    }
 
-        // ✅ Obtiene la suma de los ingresos
-        sumaIngresos = await ControlGastoService.GetSumaGastosIngreso();
-        sumaEgresos = await ControlGastoService.GetSumaGastosEgreso();
+    private async Task FiltrarGastos()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        controlGastos = await ControlGastoService.Get(fechaInicio, fechaFin);
+        sumaIngresos = await ControlGastoService.GetSumaGastosIngreso(fechaInicio, fechaFin);
+        sumaEgresos = await ControlGastoService.GetSumaGastosEgreso(fechaInicio, fechaFin);
         totalGasto = await ControlGastoService.GetTotalGastos();
     }
+
+
 }
