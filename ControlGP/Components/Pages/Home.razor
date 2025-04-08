@@ -6,7 +6,28 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<h2 class="mb-4">📊 Dashboard de Control de Gastos</h2>
+<!-- Título centrado -->
+<h2 class="mb-4 text-center" style="color: #001f3f; font-weight: bold; border-bottom: 2px solid #28a745; padding-bottom: 5px; margin-top: 30px; text-align: center;">
+    📊 Dashboard de Control de Gastos
+</h2>
+
+<RadzenTemplateForm TItem="object">
+    <RadzenFieldset Text="Saldo Actual" Style="margin-bottom: 20px;">
+        <!-- Tarjeta centrada -->
+        <RadzenRow Style="justify-content: center; margin-bottom: 20px;">
+            <RadzenColumn xs="auto" Style="display: flex; justify-content: center;">
+                <RadzenCard Style="background-color: #007bff; padding: 15px; border-radius: 12px; display: inline-block;">
+                    <h4 style="color: white; font-weight: bold; margin: 0;">
+                        <RadzenIcon Icon="account_balance_wallet" Style="margin-right: 10px;" />
+                        Disponible
+                    </h4>
+                    <h3 style="color: white; font-weight: bold; margin: 5px 0 0 0;">C$ @totalGasto.ToString("N2")</h3>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenFieldset>
+</RadzenTemplateForm>
+
 
 <RadzenTemplateForm TItem="object">
     <RadzenFieldset Text="Filtrar por fecha" Style="margin-bottom: 20px;">
@@ -19,42 +40,54 @@
             </RadzenColumn>
             <RadzenColumn xs="12" sm="4" Style="display: flex; align-items: center;">
                 <RadzenButton Text="Aplicar Filtro"
-                              Icon="search"
-                              Style="margin-top: 5px;"
-                              ButtonStyle="ButtonStyle.Primary"
-                              Click="@FiltrarGastos" />
-
+                Icon="search"
+                Style="margin-top: 5px;"
+                ButtonStyle="ButtonStyle.Primary"
+                Click="@FiltrarGastos" />
             </RadzenColumn>
         </RadzenRow>
     </RadzenFieldset>
 </RadzenTemplateForm>
 
 
-<RadzenRow>
-    <!-- Tarjeta de Disponible -->
-    <RadzenColumn xs="12" sm="4">
-        <RadzenCard Style="background-color: #007bff; color: white; padding: 20px; border-radius: 12px;">
-            <h4><RadzenIcon Icon="account_balance_wallet" Style="margin-right: 10px;" />Disponible</h4>
-            <h3>C$ @totalGasto.ToString("N2")</h3>
-        </RadzenCard>
-    </RadzenColumn>
+<RadzenTemplateForm TItem="object">
+    <RadzenFieldset Text="Ingresos | Egresos" Style="margin-bottom: 20px;">
+        <!-- Tarjetas de Ingresos y Egresos -->
+        <RadzenRow>
+            <RadzenColumn xs="12" sm="6" Style="display: flex; justify-content: center;">
+                <RadzenCard Style="background-color: #28a745; padding: 15px; border-radius: 12px; ">
+                    <h4 Style="color: white; font-weight: bold; margin: 0;">
+                        <RadzenIcon Icon="trending_up" Style="margin-right: 10px;" />
+                        Ingresos
+                    </h4>
+                    <h3 Style="color: white; font-weight: bold; margin: 5px 0 0 0;">C$ @sumaIngresos.ToString("N2")</h3>
+                </RadzenCard>
+            </RadzenColumn>
 
-    <!-- Tarjeta de Ingresos -->
-    <RadzenColumn xs="12" sm="4">
-        <RadzenCard Style="background-color: #28a745; color: white; padding: 20px; border-radius: 12px;">
-            <h4><RadzenIcon Icon="trending_up" Style="margin-right: 10px;" />Ingresos</h4>
-            <h3>C$ @sumaIngresos.ToString("N2")</h3>
-        </RadzenCard>
-    </RadzenColumn>
+            <RadzenColumn xs="12" sm="6" Style="display: flex; justify-content: center;">
+                <RadzenCard Style="background-color: #dc3545; padding: 15px; border-radius: 12px; ">
+                    <h4 Style="color: white; font-weight: bold; margin: 0;">
+                        <RadzenIcon Icon="trending_down" Style="margin-right: 10px;" />
+                        Egresos
+                    </h4>
+                    <h3 Style="color: white; font-weight: bold; margin: 5px 0 0 0;">C$ @sumaEgresos.ToString("N2")</h3>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenFieldset>
+</RadzenTemplateForm>
 
-    <!-- Tarjeta de Egresos -->
-    <RadzenColumn xs="12" sm="4">
-        <RadzenCard Style="background-color: #dc3545; color: white; padding: 20px; border-radius: 12px;">
-            <h4><RadzenIcon Icon="trending_down" Style="margin-right: 10px;" />Egresos</h4>
-            <h3>C$ @sumaEgresos.ToString("N2")</h3>
-        </RadzenCard>
-    </RadzenColumn>
-</RadzenRow>
+
+<RadzenTemplateForm TItem="object">
+    <RadzenFieldset Text="Gráfico Interáctivo" Style="margin-bottom: 20px;">
+        <RadzenChart Width="100%" Height="400px" Title="Resumen de Ingresos y Egresos" LegendVisible="false">
+            <!-- Serie para Ingreso -->
+            <RadzenColumnSeries Data="@ingresosSeries" CategoryProperty="Categoria" ValueProperty="Monto" Fill="#28a745" />
+            <!-- Serie para Egreso -->
+            <RadzenColumnSeries Data="@egresosSeries" CategoryProperty="Categoria" ValueProperty="Monto" Fill="#dc3545" />
+        </RadzenChart>
+    </RadzenFieldset>
+</RadzenTemplateForm>
 
 
 @code {
@@ -65,6 +98,9 @@
 
     private DateTime fechaInicio = DateTime.Today.AddMonths(-1); // predeterminado: último mes
     private DateTime fechaFin = DateTime.Today;
+
+    private List<GraficaData> ingresosSeries = new(); // Datos para la serie de ingresos
+    private List<GraficaData> egresosSeries = new();  // Datos para la serie de egresos
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,11 +114,27 @@
 
     private async Task CargarDatos()
     {
+        // Cargar los datos
         controlGastos = await ControlGastoService.Get(fechaInicio, fechaFin);
         sumaIngresos = await ControlGastoService.GetSumaGastosIngreso(fechaInicio, fechaFin);
         sumaEgresos = await ControlGastoService.GetSumaGastosEgreso(fechaInicio, fechaFin);
         totalGasto = await ControlGastoService.GetTotalGastos();
+
+        // Generar los datos para las series
+        ingresosSeries = new List<GraficaData>
+        {
+            new GraficaData { Categoria = "Ingreso", Monto = sumaIngresos }
+        };
+
+        egresosSeries = new List<GraficaData>
+        {
+            new GraficaData { Categoria = "Egreso", Monto = sumaEgresos }
+        };
     }
 
-
+    public class GraficaData
+    {
+        public string Categoria { get; set; } = string.Empty; // "Ingreso" o "Egreso"
+        public decimal Monto { get; set; }    // Suma de montos
+    }
 }
